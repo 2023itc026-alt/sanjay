@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MyTrip Planner — Plan & Book Your Adventure</title>
+  <link rel="stylesheet" href="style.css">  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    /* bg-image styling (overridden by inline style from script when image is provided) */
+    .bg-image{position:absolute;inset:0;background-size:cover;background-position:center center;filter:brightness(.95) saturate(.98) blur(0px);opacity:.92;transition:opacity .25s ease,filter .25s ease}
+    .bg-image.hidden{display:none}
+    @media (max-width:700px){ .bg-image{opacity:.55;filter:blur(8px) brightness(.9)} }
+  </style>
+</head>
+<body data-bg-image="assets/bg-trip.jpg">
+  <div class="bg-clip" aria-hidden="true">
+    <div class="bg-image" aria-hidden="true"></div>
+    <div class="bg-gradient"></div>
+    <video id="bgVideo" class="bg-video hidden" autoplay muted loop playsinline></video>
+    <div class="plane" aria-hidden="true">✈️</div>
+  </div>
+  <header class="site-header">
+    <div class="container">
+      <h1 class="logo">My<span>Trip</span></h1>
+      <nav>
+        <button id="btn-login" class="btn-outline">Login</button>
+        <button id="btn-signup" class="btn-primary">Sign up</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container dashboard-grid">
+    <aside class="sidebar">
+      <div class="card profile">
+        <h3>Nomad Planner</h3>
+        <p class="muted">Plan & organize your trips</p>
+      </div>
+
+      <div class="card todo">
+        <h4>To-Do</h4>
+        <ul id="todoList" class="todo-list">
+          <!-- JS renders items -->
+        </ul>
+        <div class="add-todo">
+          <input id="newTodo" placeholder="Add a task...">
+          <button id="addTodo" class="btn-primary">Add</button>
+        </div>
+      </div>
+
+      <div class="card quick-links">
+        <h4>Quick Links</h4>
+        <div class="links"><button class="link">My Trips</button><button class="link">Explore</button></div>
+      </div>
+    </aside>
+
+    <section class="main-area">
+      <div class="topbar card">
+        <input id="search" placeholder="Search destinations or trips...">
+        <div class="icons">
+          <button class="icon">🔔</button>
+          <button class="icon">🧭</button>
+        </div>
+      </div>
+
+      <div id="map" class="map card"></div> 
+
+      <div class="panels">
+        <div id="currentAdventure" class="card current-adventure">
+          <h4>Current Adventure</h4>
+          <p class="muted">No active trip</p>
+          <div class="meta"></div>
+        </div>
+
+        <div id="poiList" class="card points">
+          <h4>Points of Interest</h4>
+          <div class="poi-grid">
+            <!-- JS will render POI cards here -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="summary card">
+      <h4>Quick Planner</h4>
+
+      <form id="planner-form">
+        <div class="form-row">
+          <label>Destination</label>
+          <input name="destination" id="destination" placeholder="e.g., Bali, Tokyo" required>
+        </div>
+
+        <div class="form-row two-col">
+          <div>
+            <label>Start Date</label>
+            <input type="date" id="startDate" required>
+          </div>
+          <div>
+            <label>End Date</label>
+            <input type="date" id="endDate" required>
+          </div>
+        </div>
+
+        <div class="form-row two-col">
+          <div>
+            <label>Travelers</label>
+            <input type="number" id="travelers" min="1" value="1" required>
+          </div>
+          <div>
+            <label>Package</label>
+            <select id="package" required>
+              <option value="standard">Standard</option>
+              <option value="economy">Economy</option>
+              <option value="luxury">Luxury</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>Add-ons</label>
+          <div class="addons">
+            <label><input type="checkbox" value="guide" class="addon"> Local Guide (+$50)</label>
+            <label><input type="checkbox" value="meals" class="addon"> Meals (+$30)</label>
+            <label><input type="checkbox" value="transfer" class="addon"> Airport Transfer (+$20)</label>
+          </div>
+        </div>
+
+        <div class="form-row actions">
+          <button type="button" id="calcBtn" class="btn-primary">Calculate Budget</button>
+          <button type="button" id="bookBtn" class="btn-outline">Book Now</button>
+        </div>
+      </form>
+
+      <div id="result" class="result hidden card">
+        <h4>Plan Summary</h4>
+        <p id="summary"></p>
+        <p class="total">Total: <strong id="total"></strong></p>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- Login Modal -->
+  <div id="loginModal" class="modal hidden">
+    <div class="modal-content card">
+      <button class="modal-close" id="closeLogin">✕</button>
+
+      <div id="loginForm" class="auth-panel">
+        <h3>Welcome back</h3>
+        <input type="email" id="loginEmail" placeholder="Email" required>
+        <input type="password" id="loginPassword" placeholder="Password" required>
+        <div class="auth-actions">
+          <button id="loginSubmit" class="btn-primary">Login</button>
+        </div>
+        <p class="helper">Forgot your password? <a href="#" id="openForgotFromLogin">Reset</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Signup Modal -->
+  <div id="signupModal" class="modal hidden">
+    <div class="modal-content card">
+      <button class="modal-close" id="closeSignup">✕</button>
+
+      <div id="signupForm" class="auth-panel">
+        <h3>Create account</h3>
+        <input type="text" id="signupName" placeholder="Full name" required>
+        <input type="email" id="signupEmail" placeholder="Email" required>
+        <input type="password" id="signupPassword" placeholder="Password" required>
+        <div class="auth-actions">
+          <button id="signupSubmit" class="btn-primary">Sign up</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Forgot Modal -->
+  <div id="forgotModal" class="modal hidden">
+    <div class="modal-content card">
+      <button class="modal-close" id="closeForgot">✕</button>
+
+      <div id="forgotForm" class="auth-panel">
+        <h3>Reset password</h3>
+        <input type="email" id="forgotEmail" placeholder="Email" required>
+        <button id="forgotSend" class="btn-primary">Send reset code</button>
+        <div id="resetPanel" class="hidden">
+          <input id="resetCode" placeholder="Enter code">
+          <input id="resetNew" placeholder="New password">
+          <button id="resetSubmit" class="btn-primary">Reset Password</button>
+        </div>
+        <p class="helper">We'll simulate sending a reset code and allow you to enter it here.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">
+      <small>© MyTrip Planner — Make every trip count.</small>
+      <div class="socials">✨</div>
+    </div>
+  </footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
