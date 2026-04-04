@@ -85,13 +85,7 @@ if (!isset($_SESSION['user'])) { header("Location: index.php"); exit(); }
                     <div class="dest-info"><h3>manali</h3></div>
                 </div>
             </a>
-   <a href="planning_details.php?place=russia" style="text-decoration: none; color: inherit;">
-                <div class="dest-card">
-                    <img src="russia.jpg" alt="russia">
-                    <div class="dest-info"><h3>russia</h3></div>
-                </div>
-            </a>
-        </div>
+          </div>
     </div>
 </body>
 </html>

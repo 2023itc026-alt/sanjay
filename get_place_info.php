@@ -1,23 +1,22 @@
 <?php
 require_once 'db_config.php';
-header('Content-Type: application/json');
-
 $name = isset($_GET['name']) ? $_GET['name'] : '';
 
-$stmt = $conn->prepare("SELECT * FROM explore_places WHERE name = ?");
+// Fetch the place and its price
+$stmt = $conn->prepare("SELECT name, price FROM explore_places WHERE name = ?");
 $stmt->bind_param("s", $name);
 $stmt->execute();
 $result = $stmt->get_result();
 
-if ($row = $result->fetch_assoc()) {
+if ($place = $result->fetch_assoc()) {
     echo json_encode([
         'success' => true,
-        'name' => $row['name'],
-        'description' => $row['description'],
-        'image' => $row['image'],
-        'category' => $row['cat']
+        'name' => $place['name'],
+        'price' => floatval($place['price']) // This must be sent to the JS
     ]);
 } else {
-    echo json_encode(['success' => false, 'message' => 'Place details not found.']);
+    // If it's a static item like "Chennai" that isn't in your DB yet, 
+    // you might need a fallback here
+    echo json_encode(['success' => false]);
 }
 ?>
