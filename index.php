@@ -63,7 +63,7 @@ if (isset($_SESSION['email'])) {
                 <?php endif; ?>
             </div>
             
-            <a href="logout.php" onclick="window.location.replace(this.href); return false;" style="text-decoration: none;">
+            <a href="logout.php" style="text-decoration: none;">
                 <button type="button" style="background: #e74c3c; border: none; color: white; padding: 8px 20px; border-radius: 5px; cursor: pointer; font-size: 14px;">
                     Logout
                 </button>
@@ -79,28 +79,34 @@ if (isset($_SESSION['email'])) {
     <div class="hero">
         <h1>Where to next, Adventurer?</h1>
         <div class="grid-container">
-            <a href="planning.php" onclick="window.location.replace(this.href); return false;" style="text-decoration: none; color: inherit;">
+            <a href="planning.php" style="text-decoration: none; color: inherit;">
                 <div class="card">
                     <i>📍</i>
                     <h3>Travel Planning</h3>
                     <p>Essential itineraries and route mapping.</p>
                 </div>
             </a>
-            <a href="vehicles_guides.php?context=cab" onclick="window.location.replace(this.href); return false;" style="text-decoration: none; color: inherit;">
+            <a href="vehicles_guides.php?context=cab" style="text-decoration: none; color: inherit;">
                 <div class="card">
                     <i>🚐</i>
                     <h3>Vehicles & Guides</h3>
                     <p>Meet our certified drivers and luxury fleet.</p>
                 </div>
             </a>
-            <a href="packages.php" onclick="window.location.replace(this.href); return false;" style="text-decoration: none; color: inherit;">
+            <a href="packages.php" style="text-decoration: none; color: inherit;">
                 <div class="card">
                     <i>🎁</i>
                     <h3>Trip Packages</h3>
                     <p>Explore curated all-inclusive bundles.</p>
                 </div>
             </a>
-            <div class="card"><i>ℹ️</i><h3>About Us</h3><p>The story behind our travel mission.</p></div>
+            <a href="about.php" style="text-decoration: none; color: inherit;">
+                <div class="card">
+                    <i>ℹ️</i>
+                    <h3>About Us</h3>
+                    <p>The story behind our travel mission.</p>
+                </div>
+            </a>
         </div>
     </div>
 
@@ -171,7 +177,7 @@ if (isset($_SESSION['email'])) {
             <p><strong>Member Since:</strong> <?php echo date('M d, Y', strtotime($user_data['created_at'])); ?></p>
         </div>
         
-        <button onclick="window.location.replace('dashboard.php')" style="width: 100%; margin-top: 25px; background: #ffa500; color: #1a1a2e; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">View Trip History</button>
+        <button onclick="window.location.href='dashboard.php'" style="width: 100%; margin-top: 25px; background: #ffa500; color: #1a1a2e; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">View Trip History</button>
     </div>
 </div>
 <?php endif; ?>

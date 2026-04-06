@@ -3,6 +3,17 @@
 session_start();
 require_once 'db_config.php';
 
+function redirect($url, $message = null) {
+    if ($message !== null) {
+        $safeUrl = htmlspecialchars($url, ENT_QUOTES);
+        $safeMessage = json_encode($message, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+        echo "<script>alert($safeMessage); window.location.href='$safeUrl';</script>";
+    } else {
+        header('Location: ' . $url);
+    }
+    exit();
+}
+
 if (isset($_POST['signup_submit'])) {
     $fullname = $_POST['fullname'];
     $email = $_POST['email'];
@@ -10,9 +21,20 @@ if (isset($_POST['signup_submit'])) {
 
     // VALIDATION: Ensure password is at least 8 characters
     if (strlen($password) < 8) {
-        echo "<script>alert('Error: Password must be at least 8 characters long.'); window.location.replace('index.php');</script>";
-        exit();
+        redirect('index.php', 'Error: Password must be at least 8 characters long.');
     }
+
+    // Check if email already exists
+    $check_stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+    $check_stmt->bind_param("s", $email);
+    $check_stmt->execute();
+    $check_result = $check_stmt->get_result();
+    
+    if ($check_result->num_rows > 0) {
+        $check_stmt->close();
+        redirect('index.php', 'Error: An account with this email already exists. Please use a different email or try logging in.');
+    }
+    $check_stmt->close();
 
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
     
@@ -22,11 +44,9 @@ if (isset($_POST['signup_submit'])) {
     if ($stmt->execute()) {
         $_SESSION['user'] = $fullname;
         $_SESSION['email'] = $email;
-        echo "<script>alert('Account created successfully!'); window.location.replace('index.php');</script>";
-        exit();
+        redirect('index.php', 'Account created successfully!');
     } else {
-        echo "<script>alert('Error: Email already exists.'); window.location.replace('index.php');</script>";
-        exit();
+        redirect('index.php', 'Error: Failed to create account. Please try again.');
     }
 }
 // --- LOGIN LOGIC ---
@@ -46,12 +66,10 @@ if (isset($_POST['login_submit'])) {
             $_SESSION['is_admin'] = $user['is_admin']; 
             
             $target = ($user['is_admin'] == 1) ? "admin_dashboard.php" : "index.php";
-            // Use replace to clear login from history
-            echo "<script>window.location.replace('$target');</script>";
-            exit();
+            redirect($target);
         }
     }
-    echo "<script>alert('Invalid login'); window.location.replace('index.php');</script>";
+    redirect('index.php', 'Invalid login');
 }
 
 // --- FORGOT PASSWORD / OTP LOGIC ---
@@ -70,11 +88,10 @@ if (isset($_POST['forgot_submit'])) {
         $upd->bind_param("sss", $otp, $expiry, $email);
         
         if ($upd->execute()) {
-            echo "<script>window.location.replace('verify_otp.php?email=" . urlencode($email) . "');</script>";
-            exit();
+            redirect('verify_otp.php?email=' . urlencode($email));
         }
     } else {
-        echo "<script>alert('Email not found.'); window.location.replace('index.php');</script>";
+        redirect('index.php', 'Email not found.');
     }
 }
 
@@ -90,11 +107,10 @@ if (isset($_POST['verify_otp_submit'])) {
     
     if ($result->num_rows > 0) {
         $stmt->close();
-        echo "<script>window.location.replace('reset_password.php?email=" . urlencode($email) . "&verified=true');</script>";
-        exit();
+        redirect('reset_password.php?email=' . urlencode($email) . '&verified=true');
     } else {
         $stmt->close();
-        echo "<script>alert('Invalid or expired OTP.'); window.location.replace('verify_otp.php?email=" . urlencode($email) . "');</script>";
+        redirect('verify_otp.php?email=' . urlencode($email), 'Invalid or expired OTP.');
     }
 }
 
@@ -108,10 +124,9 @@ if (isset($_POST['update_password_submit'])) {
     
     if ($stmt->execute()) {
         $stmt->close();
-        echo "<script>alert('Password updated successfully!'); window.location.replace('index.php');</script>";
-        exit();
+        redirect('index.php', 'Password updated successfully!');
     }
-}	
+}
 
 // --- SAVE TRIP LOGIC ---
 if (isset($_POST['save_trip'])) {
@@ -129,9 +144,7 @@ if (isset($_POST['save_trip'])) {
     if ($stmt->execute()) {
         $new_trip_id = $conn->insert_id; 
         $stmt->close();
-        // Skip the 'save' step in browser history
-        echo "<script>window.location.replace('edit_trip.php?id=$new_trip_id');</script>";
-        exit();
+        redirect("edit_trip.php?id=$new_trip_id");
     }
 }
 
@@ -147,8 +160,7 @@ if (isset($_POST['update_trip'])) {
     $stmt->bind_param("sssi", $t_date, $d_date, $itinerary_string, $trip_id);
     
     if ($stmt->execute()) {
-        echo "<script>window.location.replace('dashboard.php?msg=success');</script>";
-        exit();
+        redirect('dashboard.php?msg=success');
     }
 }
 
@@ -162,8 +174,7 @@ if (isset($_GET['delete_trip'])) {
     
     if ($stmt->execute()) {
         $stmt->close();
-        echo "<script>window.location.replace('dashboard.php?msg=deleted');</script>";
-        exit();
+        redirect('dashboard.php?msg=deleted');
     }
 }
 
@@ -178,8 +189,7 @@ if (isset($_GET['trip_id']) && isset($_GET['vehicle_id'])) {
     
     if ($stmt->execute()) {
         $stmt->close();
-        echo "<script>window.location.replace('edit_trip.php?id=$trip_id&booked=success');</script>";
-        exit();
+        redirect("edit_trip.php?id=$trip_id&booked=success");
     }
 }
 
@@ -197,8 +207,7 @@ if (isset($_POST['admin_add_place'])) {
         $stmt = $conn->prepare("INSERT INTO explore_places (name, cat, target_destination, description, image, price) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->bind_param("sssssd", $name, $cat, $target, $desc, $img, $price);
         $stmt->execute();
-        echo "<script>window.location.replace('manage_planning.php?status=added');</script>";
-        exit();
+        redirect('manage_planning.php?status=added');
     }
 }
 
@@ -207,8 +216,7 @@ if (isset($_GET['delete_place'])) {
     $stmt = $conn->prepare("DELETE FROM explore_places WHERE id = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
-    echo "<script>window.location.replace('manage_planning.php?status=deleted');</script>";
-    exit();
+    redirect('manage_planning.php?status=deleted');
 }
 
 // --- ADMIN: MANAGE VEHICLES ---
@@ -222,8 +230,7 @@ if (isset($_POST['admin_add_vehicle'])) {
         $stmt = $conn->prepare("INSERT INTO vehicles (driver_name, car_model, price_per_day, image) VALUES (?, ?, ?, ?)");
         $stmt->bind_param("ssds", $driver, $model, $price, $img);
         $stmt->execute();
-        echo "<script>window.location.replace('manage_vehicles.php?status=added');</script>";
-        exit();
+        redirect('manage_vehicles.php?status=added');
     }
 }
 
@@ -232,8 +239,7 @@ if (isset($_GET['delete_vehicle'])) {
     $stmt = $conn->prepare("DELETE FROM vehicles WHERE id = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
-    echo "<script>window.location.replace('manage_vehicles.php?status=deleted');</script>";
-    exit();
+    redirect('manage_vehicles.php?status=deleted');
 }
 
 // --- ADMIN: MANAGE PACKAGES ---
@@ -248,8 +254,7 @@ if (isset($_POST['admin_add_package'])) {
         $stmt = $conn->prepare("INSERT INTO trip_packages (name, duration, price, description, image) VALUES (?, ?, ?, ?, ?)");
         $stmt->bind_param("ssdss", $name, $duration, $price, $desc, $img);
         $stmt->execute();
-        echo "<script>window.location.replace('manage_packages.php?status=added');</script>";
-        exit();
+        redirect('manage_packages.php?status=added');
     }
 }
 
@@ -258,7 +263,6 @@ if (isset($_GET['delete_package'])) {
     $stmt = $conn->prepare("DELETE FROM trip_packages WHERE id = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
-    echo "<script>window.location.replace('manage_packages.php?status=deleted');</script>";
-    exit();
+    redirect('manage_packages.php?status=deleted');
 }
 ?>
